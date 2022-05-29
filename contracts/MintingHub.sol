@@ -1,10 +1,10 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.0;
 
-import "../IERC20.sol";
-import "../IReservePool.sol";
-import "../IFrankencoin.sol";
-import "../Ownable.sol";
+import "./IERC20.sol";
+import "./IReservePool.sol";
+import "./IFrankencoin.sol";
+import "./Ownable.sol";
 import "./Position.sol";
 
 /**
@@ -25,14 +25,14 @@ contract MintingHub {
     
     struct Challenge {
         address challenger;
-        address position;
+        Position position;
         uint256 size;
         uint256 end;
         address bidder;
         uint256 bid;
     }
 
-    event ChallengeStarted(address indexed challenger, address position, uint32 number, uint256 size);
+    event ChallengeStarted(address indexed challenger, address position, uint256 size, uint32 number);
     event ChallengeAverted(uint32 number);
     event ChallengeSucceeded(uint32 number);
 
@@ -41,7 +41,7 @@ contract MintingHub {
     }
 
     function openPosition(address collateral, uint256 initialCollateral, uint256 initialLimit, uint256 duration, uint32 fees, uint32 reserve) public returns (address) {
-        Position pos = new Position(msg.sender, address(zchf), collateral, initialCollateral, initialLimit, fees, reserve);
+        Position pos = new Position(msg.sender, address(zchf), collateral, initialCollateral, initialLimit, duration, fees, reserve);
         zchf.registerPosition(address(pos));
         zchf.transferFrom(msg.sender, zchf.reserve(), OPENING_FEE);
         IERC20(collateral).transferFrom(msg.sender, address(pos), initialCollateral);
@@ -52,7 +52,7 @@ contract MintingHub {
         require(size >= position.minChallenge());
         IERC20(position.collateral()).transferFrom(msg.sender, address(this), size);
         uint32 number = challengeCount++;
-        challenges[number] = Challenge(msg.sender, size, block.timestamp + CHALLENGE_PERIOD, address(0x0), 0);
+        challenges[number] = Challenge(msg.sender, position, size, block.timestamp + CHALLENGE_PERIOD, address(0x0), 0);
         position.notifyChallengeStarted();
         emit ChallengeStarted(msg.sender, address(position), size, number);
         return number;
@@ -101,12 +101,12 @@ contract MintingHub {
      */
     function end(uint32 challengeNumber) external {
         Challenge storage challenge = challenges[challengeNumber];
-        address collateral = challenge.position.collateral();
+        IERC20 collateral = challenge.position.collateral();
         require(block.timestamp >= challenge.end);
         // challenge must have been successful, because otherwise it would have immediately ended on placing the winning bid
         collateral.transfer(challenge.challenger, challenge.size); // return the challenger's collateral
         checkSize(challenge, collateral); // ensure challenge is not larger than available collateral
-        (uint256 repay, uint256 minted, uint256 mintmax) = challenge.position.notifyChallengeSucceeded(challenge.bidder, challenge.size, challenge.bid);
+        (uint256 repay, uint256 minted, uint256 mintmax) = challenge.position.notifyChallengeSucceeded(challenge.bidder, challenge.size);
         uint256 reward = mintmax * CHALLENGER_REWARD / BASE;
         uint256 moneyNeeded = repay + (mintmax - minted) + reward;
         if (moneyNeeded > challenge.bid){
@@ -117,14 +117,14 @@ contract MintingHub {
             zchf.transfer(zchf.reserve(), challenge.bid - moneyNeeded);
         }
         zchf.transfer(challenge.challenger, reward); // pay out the challenger reward
-        zchf.transferAndCall(challenge.position, repay, new bytes(0)); // Repay the challenged and used part of the position and burn the tokens
-        zchf.transfer(challenge.position, challenge.position.getUsableMint(mintmax - minted, true)); // Give owner fair share of auction proceeds from selling off unused collateral
+        zchf.transferAndCall(address(challenge.position), repay, new bytes(0)); // Repay the challenged and used part of the position and burn the tokens
+        zchf.transfer(address(challenge.position), challenge.position.getUsableMint(mintmax - minted, true)); // Give owner fair share of auction proceeds from selling off unused collateral
         emit ChallengeSucceeded(challengeNumber);
         delete challenges[challengeNumber];
     }
 
-    function checkSize(Challenge memory challenge, address collateral) internal {
-        uint256 totalCollateral = IERC20(collateral).balanceOf(address(challenge.position));
+    function checkSize(Challenge memory challenge, IERC20 collateral) internal {
+        uint256 totalCollateral = collateral.balanceOf(address(challenge.position));
         if (challenge.size > totalCollateral){ // overbid, return excess amount
             uint256 betterBid = challenge.bid * totalCollateral / challenge.size;
             IERC20(zchf).transfer(challenge.bidder, challenge.bid - betterBid);
