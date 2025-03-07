@@ -1,5 +1,5 @@
 {
-  "name": "@frankencoin/zchf",
+  "name": "frankencoin-core",
   "version": "0.2.17",
   "description": "It shall support a wide range of collateralized minting methods that are governed by a democratic process.",
   "main": "./dist/index.js",
@@ -24,17 +24,9 @@
     "redeploy:network": "npx hardhat deploymode=base --reset --network",
     "deployPositions:network": "export deploymode=pos && npx hardhat deploy --network"
   },
-  "repository": {
-    "type": "git",
-    "url": "git+https://github.com/Frankencoin-ZCHF"
-  },
   "keywords": [],
   "author": "",
   "license": "ISC",
-  "bugs": {
-    "url": "https://github.com/Frankencoin-ZCHF/issues"
-  },
-  "homepage": "https://github.com/Frankencoin-ZCHF#readme",
   "devDependencies": {
     "@nomicfoundation/hardhat-chai-matchers": "^2.0.2",
     "@nomicfoundation/hardhat-ethers": "^3.0.4",

@@ -2,8 +2,6 @@
 
 This is the source code repository for the smart contracts of the oracle-free, collateralized stablecoin Frankencoin.
 
-There also is a [public frontend](https://frankencoin.com), a [documentation page](https://docs.frankencoin.com), an outdated [Frankencoin Research Paper](https://www.snb.ch/n/mmr/reference/sem_2022_06_03_maire/source/sem_2022_06_03_maire.n.pdf), and a more recent chapter of a [pending phd thesis](https://frankencoin.com/thesis-preprint-frankencoin.pdf).
-
 ### Source Code
 
 The source code can be found in the [contracts](contracts) folder. The following are the most important contracts.
@@ -231,53 +229,4 @@ export const ADDRESS: Record<number, ChainAddress> = {
 		storage: '0x8A7e8091e71cCB7D1EbDd773C26AD82AAd323328',
 	},
 };
-```
-
-# 7. TSUP and npm package
-
-### 7.1 TSUP
-
-> Config: /tsup.config.ts
-
-TSUP bundles TypeScript code into optimized JavaScript packages. This package uses TSUP to create production-ready builds.
-
-`yarn run build`
-
-### 7.2 NPM Package
-
-> **Increase Version:** Update version number in package.json using semantic versioning (e.g. 0.0.1 -> 0.0.2) before publishing new changes.
-
-```
-file: /package.json
-
-"name": "@frankencoin/zchf",
-"version": "0.2.16", <-- HERE
-```
-
-Login to your NPM account
-
-`npm login`
-
-This will publish your package to NPM with public access, making it **available for anyone to install and use**.
-
-`yarn run publish`
-
-To publish new version. `publish: "npm publish --access public"`
-
-> **Note**: During npm package publishing, the command may execute twice. The second execution will fail with a version conflict since the package is already published. This is expected behavior and the first publish will have succeeded.
-
-### 7.3 How to transpile package into bundled apps
-
-(not needed, since its already a true JS bundled module)
-
-E.g. for `NextJs` using the `next.config.js` in root of project.
-
-```js
-/** @type {import('next').NextConfig} */
-const nextConfig = {
-  reactStrictMode: true,
-  transpilePackages: ["@.../core", "@.../api"],
-};
-
-module.exports = nextConfig;
 ```
